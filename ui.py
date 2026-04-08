@@ -1,51 +1,56 @@
 import streamlit as st
 import requests
+import os
 
-BASE_URL = "http://localhost:7860"  # Hugging Face auto-handles this
+# ----------------------------
+# Config (HF + Local Compatible)
+# ----------------------------
+BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:7860")
 
 st.set_page_config(page_title="Cloud SRE AI Dashboard", layout="wide")
 
 st.title("🚀 Cloud SRE AI Dashboard")
 
 # ----------------------------
-# Fetch State
+# Helper Functions
 # ----------------------------
 def get_state():
     try:
-        res = requests.get(f"{BASE_URL}/state")
-        return res.json()
-    except:
+        res = requests.get(f"{BASE_URL}/state", timeout=5)
+        if res.status_code == 200:
+            return res.json()
+        else:
+            return None
+    except Exception:
         return None
 
-# ----------------------------
-# Execute Command
-# ----------------------------
+
 def run_command(command, target):
     try:
         res = requests.post(
             f"{BASE_URL}/step",
-            json={"command": command, "target": target}
+            json={"command": command, "target": target},
+            timeout=10
         )
         return res.json()
     except Exception as e:
         return {"error": str(e)}
 
-# ----------------------------
-# Reset System
-# ----------------------------
+
 def reset_system():
     try:
-        requests.post(f"{BASE_URL}/reset")
+        requests.post(f"{BASE_URL}/reset", timeout=5)
     except:
         pass
 
+
 # ----------------------------
-# UI Layout
+# Load State
 # ----------------------------
 state = get_state()
 
 if not state:
-    st.error("❌ Backend not reachable")
+    st.error("❌ Backend not reachable. Please check server.")
     st.stop()
 
 # ----------------------------
@@ -86,7 +91,7 @@ if st.button("Execute"):
     else:
         st.success("✅ Command executed")
 
-        # AI response
+        # AI Output
         if "ai_response" in result:
             st.subheader("🤖 AI Suggestion")
             st.write(result["ai_response"])
@@ -96,13 +101,13 @@ if st.button("Execute"):
 # ----------------------------
 # Reset Button
 # ----------------------------
-if st.button("Reset System"):
+if st.button("🔄 Reset System"):
     reset_system()
-    st.success("🔄 System Reset")
+    st.success("System reset successfully")
     state = get_state()
 
 # ----------------------------
-# Incident History (FIXED 🔥)
+# Incident History (SAFE)
 # ----------------------------
 st.header("📜 Incident History")
 
@@ -113,7 +118,10 @@ if not incidents:
 
 for incident in incidents:
     if isinstance(incident, dict):
-        st.write(f"🕒 {incident.get('time')} | {incident.get('action')} → {incident.get('service')}")
+        st.write(
+            f"🕒 {incident.get('time', '')} | "
+            f"{incident.get('action', '')} → {incident.get('service', '')}"
+        )
     else:
-        # fallback (prevents crash)
+        # fallback safety
         st.write(f"🕒 {incident}")
