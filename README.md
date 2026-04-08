@@ -1,14 +1,13 @@
 ---
 title: Cloud SRE AI Simulator
-## 🔗 Live Demo
- https://huggingface.co/spaces/kalyanvenkat-09/cloudsre-env
 emoji: 🚀
 colorFrom: blue
 colorTo: green
 sdk: docker
 app_port: 7860
 ---
-
+## 🔗 Live Demo
+ https://huggingface.co/spaces/kalyanvenkat-09/cloudsre-env
 # 🚀 Cloud SRE AI Simulator
 
 An **AI-powered Site Reliability Engineering (SRE) Simulator** that models real-world cloud failures and provides **intelligent recovery suggestions** using LLMs.
