@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # ----------------------------
-# IMPORTANT: Backend URL (HF Docker Compatible)
+# Backend URL (DOCKER SAFE)
 # ----------------------------
 BASE_URL = "http://127.0.0.1:7860"
 
@@ -16,10 +16,11 @@ st.title("🚀 Cloud SRE AI Dashboard")
 def get_state():
     try:
         res = requests.get(f"{BASE_URL}/state", timeout=5)
-        res.raise_for_status()
-        return res.json()
-    except Exception as e:
-        st.error(f"❌ Backend not reachable: {e}")
+        if res.status_code == 200:
+            return res.json()
+        else:
+            return None
+    except:
         return None
 
 
@@ -30,7 +31,6 @@ def run_command(command, target):
             json={"command": command, "target": target},
             timeout=10
         )
-        res.raise_for_status()
         return res.json()
     except Exception as e:
         return {"error": str(e)}
@@ -39,8 +39,8 @@ def run_command(command, target):
 def reset_system():
     try:
         requests.post(f"{BASE_URL}/reset", timeout=5)
-    except Exception as e:
-        st.error(f"Reset failed: {e}")
+    except:
+        pass
 
 
 # ----------------------------
@@ -48,7 +48,8 @@ def reset_system():
 # ----------------------------
 state = get_state()
 
-if state is None:
+if not state:
+    st.error("❌ Backend not reachable")
     st.stop()
 
 # ----------------------------
@@ -105,7 +106,7 @@ if st.button("🔄 Reset System"):
     state = get_state()
 
 # ----------------------------
-# Incident History (SAFE + REQUIRED)
+# Incident History
 # ----------------------------
 st.header("📜 Incident History")
 
@@ -121,5 +122,4 @@ for incident in incidents:
             f"{incident.get('action', '')} → {incident.get('service', '')}"
         )
     else:
-        # fallback safety (prevents crash)
         st.write(f"🕒 {incident}")
