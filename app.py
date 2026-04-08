@@ -31,14 +31,14 @@ class Action(BaseModel):
 def get_state():
     return state
 
-# ---------------- RESET API (STRICT ✅) ----------------
+# ---------------- RESET API ----------------
 @app.post("/reset")
 def reset():
     global state
     state = default_state()
-    return state  # ✅ ONLY state (IMPORTANT)
+    return state
 
-# ---------------- STEP API (STRICT + ELITE LOGIC) ----------------
+# ---------------- STEP API ----------------
 @app.post("/step")
 def step(action: Action):
     global state
@@ -47,14 +47,14 @@ def step(action: Action):
     target = action.target.lower()
 
     if target not in state["services"]:
-        return state  # still return valid state
+        return state
 
     severity = "LOW"
     impact = "Minimal"
     root_cause = "Unknown"
     auto_healed = False
 
-    # ---------------- FAIL ----------------
+    # FAIL
     if cmd == "fail":
         state["services"][target] = "failed"
         state["metrics"]["failures"] += 1
@@ -63,12 +63,12 @@ def step(action: Action):
         impact = f"{target} service outage affecting users"
         root_cause = "Service crash / resource exhaustion"
 
-        # 🔥 AUTO-HEAL
+        # AUTO-HEAL
         auto_healed = True
         state["services"][target] = "running"
         state["metrics"]["recoveries"] += 1
 
-    # ---------------- RESTART ----------------
+    # RESTART
     elif cmd == "restart":
         state["services"][target] = "running"
         state["metrics"]["recoveries"] += 1
@@ -77,7 +77,7 @@ def step(action: Action):
         impact = "Service restored"
         root_cause = "Manual recovery"
 
-    # ---------------- STOP ----------------
+    # STOP
     elif cmd == "stop":
         state["services"][target] = "stopped"
 
@@ -85,7 +85,7 @@ def step(action: Action):
         impact = f"{target} service stopped"
         root_cause = "Manual shutdown"
 
-    # ---------------- INCIDENT ----------------
+    # INCIDENT
     incident = {
         "time": datetime.now().strftime("%H:%M:%S"),
         "service": target,
@@ -98,9 +98,9 @@ def step(action: Action):
 
     state["incidents"].append(incident)
 
-    return state  # ✅ STRICT FORMAT (IMPORTANT)
+    return state
 
 # ---------------- ROOT ----------------
 @app.get("/")
 def root():
-    return {"message": "Cloud SRE AI Simulator is running"}
+    return {"message": "Cloud SRE AI Simulator is running 🚀"}
