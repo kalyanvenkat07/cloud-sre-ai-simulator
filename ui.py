@@ -1,125 +1,96 @@
 import streamlit as st
 import requests
 
-# ----------------------------
-# Backend URL (DOCKER SAFE)
-# ----------------------------
-BASE_URL = "http://127.0.0.1:7860"
+BASE_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(page_title="Cloud SRE AI Dashboard", layout="wide")
 
 st.title("🚀 Cloud SRE AI Dashboard")
 
-# ----------------------------
-# Helper Functions
-# ----------------------------
+# ---------------- API ----------------
 def get_state():
     try:
-        res = requests.get(f"{BASE_URL}/state", timeout=5)
-        if res.status_code == 200:
-            return res.json()
-        else:
-            return None
+        return requests.get(f"{BASE_URL}/state").json()
     except:
         return None
 
-
-def run_command(command, target):
+def run(cmd, target):
     try:
-        res = requests.post(
-            f"{BASE_URL}/step",
-            json={"command": command, "target": target},
-            timeout=10
-        )
-        return res.json()
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def reset_system():
-    try:
-        requests.post(f"{BASE_URL}/reset", timeout=5)
+        return requests.post(f"{BASE_URL}/step", json={"command": cmd, "target": target}).json()
     except:
-        pass
+        return {"error": "API error"}
 
+def reset():
+    requests.post(f"{BASE_URL}/reset")
 
-# ----------------------------
-# Load State
-# ----------------------------
 state = get_state()
 
 if not state:
     st.error("❌ Backend not reachable")
     st.stop()
 
-# ----------------------------
-# Metrics
-# ----------------------------
+# ---------------- METRICS ----------------
 st.header("📊 Metrics")
 
 col1, col2 = st.columns(2)
 col1.metric("Failures", state["metrics"]["failures"])
 col2.metric("Recoveries", state["metrics"]["recoveries"])
 
-# ----------------------------
-# Services
-# ----------------------------
+st.subheader("📈 Trend")
+st.line_chart({
+    "Failures": [state["metrics"]["failures"]],
+    "Recoveries": [state["metrics"]["recoveries"]]
+})
+
+# ---------------- SERVICES ----------------
 st.header("🖥️ Services")
 
-for service, status in state["services"].items():
+for s, status in state["services"].items():
     if status == "running":
-        st.success(f"{service} Running")
+        st.success(f"{s} Running")
     elif status == "failed":
-        st.error(f"{service} Failed")
+        st.error(f"{s} Failed")
     else:
-        st.warning(f"{service} {status}")
+        st.warning(f"{s} Stopped")
 
-# ----------------------------
-# Actions
-# ----------------------------
-st.header("⚙️ Actions")
+# ---------------- ACTION ----------------
+st.header("⚙️ Control Panel")
 
-command = st.selectbox("Command", ["fail", "restart", "stop"])
+cmd = st.selectbox("Command", ["fail", "restart", "stop"])
 target = st.selectbox("Service", ["web", "db", "cache"])
 
 if st.button("Execute"):
-    result = run_command(command, target)
+    res = run(cmd, target)
 
-    if "error" in result:
-        st.error(result["error"])
+    if "error" in res:
+        st.error(res["error"])
     else:
-        st.success("✅ Command executed")
+        st.success("Command executed")
 
-        # AI Output
-        if "ai_response" in result:
-            st.subheader("🤖 AI Suggestion")
-            st.write(result["ai_response"])
+        st.subheader("🤖 AI Analysis")
+        st.write(res["ai_response"])
 
-        state = result["state"]
+        state = res["state"]
 
-# ----------------------------
-# Reset Button
-# ----------------------------
-if st.button("🔄 Reset System"):
-    reset_system()
-    st.success("System reset successfully")
+if st.button("Reset System"):
+    reset()
+    st.success("System reset")
     state = get_state()
 
-# ----------------------------
-# Incident History
-# ----------------------------
+# ---------------- INCIDENTS ----------------
 st.header("📜 Incident History")
 
-incidents = state.get("incidents", [])
+for inc in reversed(state["incidents"]):
+    auto = "✅ Yes" if inc["auto_healed"] else "❌ No"
 
-if not incidents:
-    st.info("No incidents yet")
+    st.markdown(f"""
+**🕒 {inc['time']} | {inc['service'].upper()}**
 
-for incident in incidents:
-    if isinstance(incident, dict):
-        st.write(
-            f"🕒 {incident.get('time', '')} | "
-            f"{incident.get('action', '')} → {incident.get('service', '')}"
-        )
-    else:
-        st.write(f"🕒 {incident}")
+- ⚙️ Action: {inc['action']}
+- 🚨 Severity: {inc['severity']}
+- 📉 Impact: {inc['impact']}
+- 🔍 Root Cause: {inc['root_cause']}
+- 🤖 Auto-Healed: {auto}
+
+---
+""")
