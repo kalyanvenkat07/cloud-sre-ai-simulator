@@ -1,15 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Dict, Any
 from datetime import datetime
-from inference import run_inference
 
 app = FastAPI()
 
-# ----------------------------
-# Global State
-# ----------------------------
-def get_initial_state():
+# ---------------- STATE ----------------
+def default_state():
     return {
         "services": {
             "web": "running",
@@ -23,93 +19,115 @@ def get_initial_state():
         }
     }
 
-state = get_initial_state()
+state = default_state()
 
-# ----------------------------
-# Request Model
-# ----------------------------
-class CommandRequest(BaseModel):
+# ---------------- MODEL ----------------
+class Action(BaseModel):
     command: str
     target: str
 
-# ----------------------------
-# Root
-# ----------------------------
-@app.get("/")
-def root():
-    return {"message": "Cloud SRE AI Simulator is running"}
-
-# ----------------------------
-# Get State
-# ----------------------------
+# ---------------- STATE API ----------------
 @app.get("/state")
 def get_state():
     return state
 
-# ----------------------------
-# Reset (VERY IMPORTANT)
-# ----------------------------
+# ---------------- RESET API ----------------
 @app.post("/reset")
-def reset_env():
+def reset():
     global state
-    state = get_initial_state()
-    return {
-        "status": "reset successful",
-        "state": state
-    }
+    state = default_state()
+    return {"status": "reset successful", "state": state}
 
-# ----------------------------
-# Execute Step
-# ----------------------------
+# ---------------- STEP API ----------------
 @app.post("/step")
-def step(req: CommandRequest) -> Dict[str, Any]:
+def step(action: Action):
     global state
 
-    command = req.command.lower()
-    target = req.target.lower()
+    cmd = action.command.lower()
+    target = action.target.lower()
 
-    # ----------------------------
-    # Validate target
-    # ----------------------------
     if target not in state["services"]:
-        return {"error": f"Invalid service: {target}"}
+        return {"error": "Invalid service"}
 
-    # ----------------------------
-    # Apply command
-    # ----------------------------
-    if command == "fail":
+    severity = "LOW"
+    impact = "Minimal"
+    root_cause = "Unknown"
+    auto_healed = False
+
+    # ---------------- FAIL ----------------
+    if cmd == "fail":
         state["services"][target] = "failed"
         state["metrics"]["failures"] += 1
 
-    elif command == "restart":
+        severity = "HIGH"
+        impact = f"{target} service outage affecting users"
+        root_cause = "Service crash / resource exhaustion"
+
+        # 🔥 AUTO-HEAL
+        auto_healed = True
         state["services"][target] = "running"
         state["metrics"]["recoveries"] += 1
 
-    elif command == "stop":
+    # ---------------- RESTART ----------------
+    elif cmd == "restart":
+        state["services"][target] = "running"
+        state["metrics"]["recoveries"] += 1
+
+        severity = "LOW"
+        impact = "Service restored"
+        root_cause = "Manual recovery"
+
+    # ---------------- STOP ----------------
+    elif cmd == "stop":
         state["services"][target] = "stopped"
 
+        severity = "MEDIUM"
+        impact = f"{target} service stopped"
+        root_cause = "Manual shutdown"
+
     else:
-        return {"error": f"Invalid command: {command}"}
+        return {"error": "Invalid command"}
 
-    # ----------------------------
-    # Add structured incident ✅ FIXED
-    # ----------------------------
-    state["incidents"].append({
+    # ---------------- INCIDENT ----------------
+    incident = {
         "time": datetime.now().strftime("%H:%M:%S"),
-        "action": command,
-        "service": target
-    })
-
-    # ----------------------------
-    # AI Inference
-    # ----------------------------
-    ai_response = run_inference(command, target)
-
-    # ----------------------------
-    # Response
-    # ----------------------------
-    return {
-        "message": "step executed",
-        "ai_response": ai_response,
-        "state": state
+        "service": target,
+        "action": cmd,
+        "severity": severity,
+        "impact": impact,
+        "root_cause": root_cause,
+        "auto_healed": auto_healed
     }
+
+    state["incidents"].append(incident)
+
+    # ---------------- AI RESPONSE ----------------
+    ai_response = f"""
+🚨 Incident Report
+Service: {target}
+Severity: {severity}
+
+Impact:
+{impact}
+
+Root Cause:
+{root_cause}
+
+Auto-Healing:
+{"Executed" if auto_healed else "Not triggered"}
+
+Recommended Actions:
+- Monitor logs
+- Ensure stability
+"""
+
+    return {
+        "state": state,
+        "ai_response": ai_response,
+        "incident": incident
+    }
+
+# ---------------- ROOT ----------------
+@app.get("/")
+def root():
+    return {"message": "Cloud SRE AI Simulator is running"}
