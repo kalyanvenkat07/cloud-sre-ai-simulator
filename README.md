@@ -12,7 +12,6 @@ tags:
   - ai
   - simulation
 ---
-
 # 🚀 Cloud SRE AI Simulator
 
 ## 💡 Overview
