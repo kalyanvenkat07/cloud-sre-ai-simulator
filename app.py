@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Dict, Any
+from datetime import datetime
 from inference import run_inference
 
 app = FastAPI()
@@ -8,39 +9,8 @@ app = FastAPI()
 # ----------------------------
 # Global State
 # ----------------------------
-state = {
-    "services": {
-        "web": "running",
-        "db": "running",
-        "cache": "running"
-    },
-    "incidents": [],
-    "metrics": {
-        "failures": 0,
-        "recoveries": 0
-    }
-}
-
-# ----------------------------
-# Request Model
-# ----------------------------
-class CommandRequest(BaseModel):
-    command: str
-    target: str
-
-# ----------------------------
-# Get Current State
-# ----------------------------
-@app.get("/state")
-def get_state():
-    return state
-
-
-@app.post("/reset")
-def reset_env():
-    global state
-
-    state = {
+def get_initial_state():
+    return {
         "services": {
             "web": "running",
             "db": "running",
@@ -53,13 +23,43 @@ def reset_env():
         }
     }
 
+state = get_initial_state()
+
+# ----------------------------
+# Request Model
+# ----------------------------
+class CommandRequest(BaseModel):
+    command: str
+    target: str
+
+# ----------------------------
+# Root
+# ----------------------------
+@app.get("/")
+def root():
+    return {"message": "Cloud SRE AI Simulator is running"}
+
+# ----------------------------
+# Get State
+# ----------------------------
+@app.get("/state")
+def get_state():
+    return state
+
+# ----------------------------
+# Reset (VERY IMPORTANT)
+# ----------------------------
+@app.post("/reset")
+def reset_env():
+    global state
+    state = get_initial_state()
     return {
         "status": "reset successful",
         "state": state
     }
 
 # ----------------------------
-# Execute Command
+# Execute Step
 # ----------------------------
 @app.post("/step")
 def step(req: CommandRequest) -> Dict[str, Any]:
@@ -68,10 +68,15 @@ def step(req: CommandRequest) -> Dict[str, Any]:
     command = req.command.lower()
     target = req.target.lower()
 
-    # Log incident
-    state["incidents"].append(f"{command} on {target}")
+    # ----------------------------
+    # Validate target
+    # ----------------------------
+    if target not in state["services"]:
+        return {"error": f"Invalid service: {target}"}
 
-    # Apply command logic
+    # ----------------------------
+    # Apply command
+    # ----------------------------
     if command == "fail":
         state["services"][target] = "failed"
         state["metrics"]["failures"] += 1
@@ -83,17 +88,28 @@ def step(req: CommandRequest) -> Dict[str, Any]:
     elif command == "stop":
         state["services"][target] = "stopped"
 
-    # Call AI inference
+    else:
+        return {"error": f"Invalid command: {command}"}
+
+    # ----------------------------
+    # Add structured incident ✅ FIXED
+    # ----------------------------
+    state["incidents"].append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "action": command,
+        "service": target
+    })
+
+    # ----------------------------
+    # AI Inference
+    # ----------------------------
     ai_response = run_inference(command, target)
 
+    # ----------------------------
+    # Response
+    # ----------------------------
     return {
         "message": "step executed",
         "ai_response": ai_response,
         "state": state
     }
-
-
-
-@app.get("/")
-def root():
-    return {"message": "Cloud SRE AI Simulator is running"}
