@@ -7,7 +7,16 @@ sdk: docker
 app_port: 7860
 ---
 
-👉 [Live Demo](https://huggingface.co/spaces/kalyanvenkat-09/cloudsre-env)
+# 🚀 Cloud SRE AI Simulator  
+### AI-Powered Failure Simulation, Intelligent Analysis & Auto-Healing System  
+
+> Simulate cloud failures, analyze incidents, and automatically recover systems using AI-driven logic.
+
+---
+
+## 🔗 Live Demo
+👉 **[Open App](https://huggingface.co/spaces/kalyanvenkat-09/cloudsre-env)**
+
 ---
 
 ## 📸 Demo Preview
@@ -15,113 +24,132 @@ app_port: 7860
 ### 🟢 Normal System State
 ![Normal](screenshot1.png)
 
-### 🚨 Failure Detection & AI Response
+### 🚨 Failure + Auto-Healing
 ![Failure](screenshot2.png)
 
-### 📜 Incident History Tracking
+### 📜 Incident Intelligence
 ![History](screenshot3.png)
-
----
-
-## 🚀 Cloud SRE AI Simulator   
-### AI-Powered Failure Simulation & Recovery System
-> Simulate cloud failures, analyze incidents, and get AI-driven recovery suggestions in real time.
-> An **AI-powered Site Reliability Engineering (SRE) Simulator** that models real-world cloud failures and provides **intelligent recovery suggestions**.
 
 ---
 
 ## 🌟 Overview
 
-Modern cloud systems require fast and accurate incident response.  
-This project simulates cloud failures and enhances decision-making using AI.
+This project is a **complete OpenEnv-compatible environment** that simulates real-world cloud infrastructure failures and integrates **AI-style reasoning with auto-healing capabilities**.
 
-👉 Instead of just detecting issues, it **suggests what to do next**.
+It enables:
+- Failure simulation  
+- Intelligent incident analysis  
+- Automatic recovery (self-healing systems)  
+- Real-time monitoring  
 
 ---
 
 ## 🔥 Key Features
 
-### 🖥️ SRE Simulation
-- Simulate failures (`fail`)
-- Restart services (`restart`)
-- Stop services (`stop`)
-- Multi-service system (web, db, cache)
+### ⚙️ OpenEnv API (Core Requirement)
+- `GET /state` → Current system state  
+- `POST /step` → Execute actions  
+- `POST /reset` → Reset environment  
 
-### 🤖 AI Assistant
-- Suggests recovery actions  
-- Structured inference flow (START → STEP → END)
+---
 
-### 📊 Metrics Tracking
-- Failure count  
-- Recovery count  
-- Incident logs  
+### 🖥️ Cloud Simulation
+- Multi-service system (`web`, `db`, `cache`)  
+- Simulate failures, restarts, and shutdowns  
 
-### 🎨 Interactive Dashboard
-- Built with Streamlit  
-- Real-time system state  
-- One-click actions  
+---
+
+### 🤖 AI-Driven Analysis
+- Severity classification (**HIGH / MEDIUM / LOW**)  
+- Root cause detection  
+- Impact analysis  
+- Actionable recovery recommendations  
+
+---
+
+### 🔁 Auto-Healing System (🔥 Highlight Feature)
+- Detects failure events  
+- Automatically restores services  
+- Updates recovery metrics  
+- Mimics real-world self-healing infrastructure  
+
+---
+
+### 📊 Real-Time Dashboard
+- Built using Streamlit  
+- Live metrics (failures & recoveries)  
+- System health visualization  
+- Interactive control panel  
+
+---
+
+### 📜 Incident Intelligence
+Each incident logs:
+- Timestamp  
+- Service affected  
+- Severity  
+- Impact  
+- Root cause  
+- Auto-healing status  
 
 ---
 
 ## 🧠 Architecture
-Streamlit UI
+Streamlit UI (Port 7860)
 ↓
-FastAPI Backend
+FastAPI Backend (Port 8000)
 ↓
-Inference Engine (inference.py)
+SRE Simulation Engine
 ↓
-AI Logic Layer
+AI Logic + Auto-Healing
+
 
 ---
 
-## 📡 API Endpoints
+## ⚙️ Tech Stack
 
-| Endpoint | Method | Description |
-|----------|--------|------------|
-| `/state` | GET | Get system state |
-| `/step`  | POST | Execute command |
-| `/reset` | POST | Reset system |
-
----
-
-## ⚙️ Environment Variables
-
-- `API_BASE_URL` → AI API URL  
-- `MODEL_NAME` → Model name  
-- `HF_TOKEN` → Optional token  
+- FastAPI (Backend API)  
+- Streamlit (Frontend UI)  
+- Python  
+- Docker (Hugging Face Spaces)  
 
 ---
 
-## ▶️ Run Locally
+## 📡 API Example
 
-```bash
-pip install -r requirements.txt
-uvicorn app:app --port 8000
-Open:
-http://localhost:8000/docs
+### ▶️ Step Request
+
+```json
+{
+  "command": "fail",
+  "target": "web"
+}
+✅ Response
+{
+  "state": {...},
+  "ai_response": "...",
+  "incident": {...}
+}
 🧪 Demo Flow
-1.Open dashboard
-2.Select:
-Command → fail
+1.Select:
+2.Command → fail
 Service → web
 3.Click Execute
 Result:
 Service fails ❌
+Auto-healing triggers 🔁
+Service recovers ✅
 Metrics update 📊
-AI suggests recovery 🤖
- Why This Project
-Combines DevOps + AI
-Real-world SRE use case
-Interactive demo
-Clean architecture
- Tech Stack
-FastAPI
-Streamlit
-Python
-Docker (Hugging Face Spaces)
- Pitch
+AI analysis generated 🤖
+🏆 Why This Project Stands Out
+Combines DevOps + AI + Simulation
+Implements real-world SRE practices
+Includes auto-healing (rare in hackathons)
+Fully OpenEnv compliant
+Clean architecture and UI
+🎤 Pitch
 
-“This project simulates real cloud failures and uses AI to recommend recovery actions, helping engineers respond faster and smarter.”
+“This project simulates real cloud failures and enhances reliability engineering by combining AI-driven analysis with automatic self-healing systems.”
 
 👨‍💻 Author
 
