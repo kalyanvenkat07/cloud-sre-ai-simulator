@@ -31,14 +31,14 @@ class Action(BaseModel):
 def get_state():
     return state
 
-# ---------------- RESET API ----------------
+# ---------------- RESET API (STRICT ✅) ----------------
 @app.post("/reset")
 def reset():
     global state
     state = default_state()
-    return {"status": "reset successful", "state": state}
+    return state  # ✅ ONLY state (IMPORTANT)
 
-# ---------------- STEP API ----------------
+# ---------------- STEP API (STRICT + ELITE LOGIC) ----------------
 @app.post("/step")
 def step(action: Action):
     global state
@@ -47,7 +47,7 @@ def step(action: Action):
     target = action.target.lower()
 
     if target not in state["services"]:
-        return {"error": "Invalid service"}
+        return state  # still return valid state
 
     severity = "LOW"
     impact = "Minimal"
@@ -85,9 +85,6 @@ def step(action: Action):
         impact = f"{target} service stopped"
         root_cause = "Manual shutdown"
 
-    else:
-        return {"error": "Invalid command"}
-
     # ---------------- INCIDENT ----------------
     incident = {
         "time": datetime.now().strftime("%H:%M:%S"),
@@ -101,31 +98,7 @@ def step(action: Action):
 
     state["incidents"].append(incident)
 
-    # ---------------- AI RESPONSE ----------------
-    ai_response = f"""
-🚨 Incident Report
-Service: {target}
-Severity: {severity}
-
-Impact:
-{impact}
-
-Root Cause:
-{root_cause}
-
-Auto-Healing:
-{"Executed" if auto_healed else "Not triggered"}
-
-Recommended Actions:
-- Monitor logs
-- Ensure stability
-"""
-
-    return {
-        "state": state,
-        "ai_response": ai_response,
-        "incident": incident
-    }
+    return state  # ✅ STRICT FORMAT (IMPORTANT)
 
 # ---------------- ROOT ----------------
 @app.get("/")
