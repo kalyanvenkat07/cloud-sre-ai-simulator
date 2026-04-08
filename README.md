@@ -7,9 +7,7 @@ sdk: docker
 app_port: 7860
 ---
 
-## 🔗 Live Demo
-👉 https://huggingface.co/spaces/kalyanvenkat-09/cloudsre-env
-
+👉 [Live Demo](https://huggingface.co/spaces/kalyanvenkat-09/cloudsre-env)
 ---
 
 ## 📸 Demo Preview
@@ -25,9 +23,10 @@ app_port: 7860
 
 ---
 
-# 🚀 Cloud SRE AI Simulator
-
-An **AI-powered Site Reliability Engineering (SRE) Simulator** that models real-world cloud failures and provides **intelligent recovery suggestions**.
+## 🚀 Cloud SRE AI Simulator  
+### AI-Powered Failure Simulation & Recovery System
+> Simulate cloud failures, analyze incidents, and get AI-driven recovery suggestions in real time.
+> An **AI-powered Site Reliability Engineering (SRE) Simulator** that models real-world cloud failures and provides **intelligent recovery suggestions**.
 
 ---
 
