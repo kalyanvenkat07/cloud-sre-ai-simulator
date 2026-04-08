@@ -1,11 +1,10 @@
 import streamlit as st
 import requests
-import os
 
 # ----------------------------
-# Config (HF + Local Compatible)
+# IMPORTANT: Backend URL (HF Docker Compatible)
 # ----------------------------
-BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:7860")
+BASE_URL = "http://127.0.0.1:7860"
 
 st.set_page_config(page_title="Cloud SRE AI Dashboard", layout="wide")
 
@@ -17,11 +16,10 @@ st.title("🚀 Cloud SRE AI Dashboard")
 def get_state():
     try:
         res = requests.get(f"{BASE_URL}/state", timeout=5)
-        if res.status_code == 200:
-            return res.json()
-        else:
-            return None
-    except Exception:
+        res.raise_for_status()
+        return res.json()
+    except Exception as e:
+        st.error(f"❌ Backend not reachable: {e}")
         return None
 
 
@@ -32,6 +30,7 @@ def run_command(command, target):
             json={"command": command, "target": target},
             timeout=10
         )
+        res.raise_for_status()
         return res.json()
     except Exception as e:
         return {"error": str(e)}
@@ -40,8 +39,8 @@ def run_command(command, target):
 def reset_system():
     try:
         requests.post(f"{BASE_URL}/reset", timeout=5)
-    except:
-        pass
+    except Exception as e:
+        st.error(f"Reset failed: {e}")
 
 
 # ----------------------------
@@ -49,16 +48,15 @@ def reset_system():
 # ----------------------------
 state = get_state()
 
-if not state:
-    st.error("❌ Backend not reachable. Please check server.")
+if state is None:
     st.stop()
 
 # ----------------------------
 # Metrics
 # ----------------------------
 st.header("📊 Metrics")
-col1, col2 = st.columns(2)
 
+col1, col2 = st.columns(2)
 col1.metric("Failures", state["metrics"]["failures"])
 col2.metric("Recoveries", state["metrics"]["recoveries"])
 
@@ -107,7 +105,7 @@ if st.button("🔄 Reset System"):
     state = get_state()
 
 # ----------------------------
-# Incident History (SAFE)
+# Incident History (SAFE + REQUIRED)
 # ----------------------------
 st.header("📜 Incident History")
 
@@ -123,5 +121,5 @@ for incident in incidents:
             f"{incident.get('action', '')} → {incident.get('service', '')}"
         )
     else:
-        # fallback safety
+        # fallback safety (prevents crash)
         st.write(f"🕒 {incident}")
