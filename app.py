@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, Any
 from inference import run_inference
-from datetime import datetime
 
-app = FastAPI(title="🚀 Cloud SRE AI Simulator")
+app = FastAPI()
 
-# ---------------- STATE ----------------
-system_state: Dict = {
+# ----------------------------
+# Global State
+# ----------------------------
+state = {
     "services": {
         "web": "running",
         "db": "running",
@@ -20,24 +21,26 @@ system_state: Dict = {
     }
 }
 
-# ---------------- MODEL ----------------
-class Command(BaseModel):
+# ----------------------------
+# Request Model
+# ----------------------------
+class CommandRequest(BaseModel):
     command: str
     target: str
 
-# ---------------- ROUTES ----------------
-@app.get("/")
-def home():
-    return {"message": "Cloud SRE Simulator Running 🚀"}
-
+# ----------------------------
+# Get Current State
+# ----------------------------
 @app.get("/state")
 def get_state():
-    return system_state
+    return state
+
 
 @app.post("/reset")
-def reset():
-    global system_state
-    system_state = {
+def reset_env():
+    global state
+
+    state = {
         "services": {
             "web": "running",
             "db": "running",
@@ -49,42 +52,48 @@ def reset():
             "recoveries": 0
         }
     }
-    return {"status": "System reset successful"}
-
-@app.post("/step")
-def step(cmd: Command):
-    service = cmd.target
-
-    if service not in system_state["services"]:
-        return {"error": "Invalid service"}
-
-    # ---------------- SIMULATION ----------------
-    if cmd.command == "fail":
-        system_state["services"][service] = "failed"
-        system_state["metrics"]["failures"] += 1
-
-    elif cmd.command == "restart":
-        system_state["services"][service] = "running"
-        system_state["metrics"]["recoveries"] += 1
-
-    elif cmd.command == "stop":
-        system_state["services"][service] = "stopped"
-
-    else:
-        return {"error": "Invalid command"}
-
-    # ---------------- INCIDENT LOG ----------------
-    system_state["incidents"].append({
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "action": cmd.command,
-        "service": service
-    })
-
-    # ---------------- AI ----------------
-    ai_output = run_inference(cmd.command, cmd.target)
 
     return {
-        "message": f"{cmd.command} executed on {service}",
-        "state": system_state,
-        "ai": ai_output
+        "status": "reset successful",
+        "state": state
     }
+
+# ----------------------------
+# Execute Command
+# ----------------------------
+@app.post("/step")
+def step(req: CommandRequest) -> Dict[str, Any]:
+    global state
+
+    command = req.command.lower()
+    target = req.target.lower()
+
+    # Log incident
+    state["incidents"].append(f"{command} on {target}")
+
+    # Apply command logic
+    if command == "fail":
+        state["services"][target] = "failed"
+        state["metrics"]["failures"] += 1
+
+    elif command == "restart":
+        state["services"][target] = "running"
+        state["metrics"]["recoveries"] += 1
+
+    elif command == "stop":
+        state["services"][target] = "stopped"
+
+    # Call AI inference
+    ai_response = run_inference(command, target)
+
+    return {
+        "message": "step executed",
+        "ai_response": ai_response,
+        "state": state
+    }
+
+
+
+@app.get("/")
+def root():
+    return {"message": "Cloud SRE AI Simulator is running"}
