@@ -1,11 +1,13 @@
 ---
-title: Cloud SRE AI Simulator
+title: cloudsre-env
 emoji: 🚀
 colorFrom: blue
 colorTo: green
 sdk: docker
-app_port: 7860
+app_file: app.py
+pinned: false
 ---
+
 
 # 🚀 Cloud SRE AI Simulator  
 ### AI-Powered Failure Simulation, Intelligent Analysis & Auto-Healing System  
