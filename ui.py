@@ -1,91 +1,119 @@
 import streamlit as st
 import requests
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:7860"  # Hugging Face auto-handles this
 
-st.set_page_config(page_title="SRE Dashboard", layout="wide")
+st.set_page_config(page_title="Cloud SRE AI Dashboard", layout="wide")
 
 st.title("🚀 Cloud SRE AI Dashboard")
 
-# Fetch state
-data = {}
-try:
-    data = requests.get(f"{BASE_URL}/state").json()
-except:
-    st.error("Backend not reachable")
+# ----------------------------
+# Fetch State
+# ----------------------------
+def get_state():
+    try:
+        res = requests.get(f"{BASE_URL}/state")
+        return res.json()
+    except:
+        return None
 
-# ---------------- METRICS ----------------
+# ----------------------------
+# Execute Command
+# ----------------------------
+def run_command(command, target):
+    try:
+        res = requests.post(
+            f"{BASE_URL}/step",
+            json={"command": command, "target": target}
+        )
+        return res.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+# ----------------------------
+# Reset System
+# ----------------------------
+def reset_system():
+    try:
+        requests.post(f"{BASE_URL}/reset")
+    except:
+        pass
+
+# ----------------------------
+# UI Layout
+# ----------------------------
+state = get_state()
+
+if not state:
+    st.error("❌ Backend not reachable")
+    st.stop()
+
+# ----------------------------
+# Metrics
+# ----------------------------
 st.header("📊 Metrics")
-
 col1, col2 = st.columns(2)
 
-if data:
-    failures = data["metrics"]["failures"]
-    recoveries = data["metrics"]["recoveries"]
+col1.metric("Failures", state["metrics"]["failures"])
+col2.metric("Recoveries", state["metrics"]["recoveries"])
 
-    col1.metric("Failures", failures)
-    col2.metric("Recoveries", recoveries)
+# ----------------------------
+# Services
+# ----------------------------
+st.header("🖥️ Services")
 
-    # Better trend chart
-    st.subheader("📈 Trend")
-    st.line_chart({
-        "Failures": [failures],
-        "Recoveries": [recoveries]
-    })
+for service, status in state["services"].items():
+    if status == "running":
+        st.success(f"{service} Running")
+    elif status == "failed":
+        st.error(f"{service} Failed")
+    else:
+        st.warning(f"{service} {status}")
 
-# ---------------- SERVICES ----------------
-st.header("🖥️ Services Status")
+# ----------------------------
+# Actions
+# ----------------------------
+st.header("⚙️ Actions")
 
-if data:
-    for s, status in data["services"].items():
-        if status == "running":
-            st.success(f"{s.upper()} ✅ Running")
-        elif status == "failed":
-            st.error(f"{s.upper()} ❌ Failed")
-        else:
-            st.warning(f"{s.upper()} ⚠️ Stopped")
-
-# ---------------- ACTION ----------------
-st.header("⚙️ Run Command")
-
-cmd = st.selectbox("Command", ["fail", "restart", "stop"])
+command = st.selectbox("Command", ["fail", "restart", "stop"])
 target = st.selectbox("Service", ["web", "db", "cache"])
 
 if st.button("Execute"):
-    res = requests.post(f"{BASE_URL}/step", json={
-        "command": cmd,
-        "target": target
-    }).json()
+    result = run_command(command, target)
 
-    # AI output
-    st.subheader("🤖 AI Analysis")
+    if "error" in result:
+        st.error(result["error"])
+    else:
+        st.success("✅ Command executed")
 
-    if "severity" in res["ai"]:
-        severity = res["ai"]["severity"]
+        # AI response
+        if "ai_response" in result:
+            st.subheader("🤖 AI Suggestion")
+            st.write(result["ai_response"])
 
-        if severity == "HIGH":
-            st.error(f"🚨 Severity: {severity}")
-        elif severity == "MEDIUM":
-            st.warning(f"⚠️ Severity: {severity}")
-        else:
-            st.success(f"✅ Severity: {severity}")
+        state = result["state"]
 
-    st.write(res["ai"]["suggestion"])
+# ----------------------------
+# Reset Button
+# ----------------------------
+if st.button("Reset System"):
+    reset_system()
+    st.success("🔄 System Reset")
+    state = get_state()
 
-    st.subheader("📊 Updated State")
-    st.json(res["state"])
-
-# ---------------- INCIDENT HISTORY ----------------
+# ----------------------------
+# Incident History (FIXED 🔥)
+# ----------------------------
 st.header("📜 Incident History")
 
-if data and "incidents" in data:
-    if len(data["incidents"]) == 0:
-        st.info("No incidents yet")
-    else:
-        for incident in reversed(data["incidents"]):
-            st.write(f"🕒 {incident['time']} | {incident['action']} → {incident['service']}")
+incidents = state.get("incidents", [])
 
-# ---------------- RESET ----------------
-if st.button("Reset System"):
-    requests.post(f"{BASE_URL}/reset")
-    st.warning("System Reset Done")
+if not incidents:
+    st.info("No incidents yet")
+
+for incident in incidents:
+    if isinstance(incident, dict):
+        st.write(f"🕒 {incident.get('time')} | {incident.get('action')} → {incident.get('service')}")
+    else:
+        # fallback (prevents crash)
+        st.write(f"🕒 {incident}")
