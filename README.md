@@ -23,7 +23,7 @@ app_port: 7860
 
 ---
 
-## 🚀 Cloud SRE AI Simulator  
+## 🚀 Cloud SRE AI Simulator   
 ### AI-Powered Failure Simulation & Recovery System
 > Simulate cloud failures, analyze incidents, and get AI-driven recovery suggestions in real time.
 > An **AI-powered Site Reliability Engineering (SRE) Simulator** that models real-world cloud failures and provides **intelligent recovery suggestions**.
